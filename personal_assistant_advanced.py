@@ -16,9 +16,9 @@ from email.message import EmailMessage
 
 # ---- CONFIG ----
 TASKS_FILE     = "tasks.json"
-EMAIL_SENDER   = "Your Email "
+EMAIL_SENDER   = "sbacchus.fitness@gmail.com "
 EMAIL_RECEIVER = "micharby73@gmail.com"
-EMAIL_PASSWORD = "your password "  # your app password
+EMAIL_PASSWORD = "hdzlahpozrtxozrc"  # your app password
 
 toaster = ToastNotifier()
 
@@ -190,15 +190,31 @@ def voice_add_task():
     except Exception as e:
         messagebox.showerror("Voice Error", str(e))
 
+
+# ---- Calendar Edit ---- will display all tasks, but when specific date is selected on "Show Calender" 
+# only specific dates tasks are displayed.
+
 def show_calendar():
     win = tk.Toplevel(root)
     win.title("Calendar")
     cal = Calendar(win, selectmode='day')
     cal.pack(pady=10)
+
     def filter_by_date():
-        sel_date = datetime.datetime.strptime(cal.get_date(), "%m/%d/%y").date()
-        filtered = [t for t in tasks if parse_date(t['date']).date() == sel_date]
-        update_task_list(filtered)
+        try:
+            sel_date = datetime.datetime.strptime(cal.get_date(), "%m/%d/%y").date()
+            filtered = []
+            for t in tasks:
+                try:
+                    task_date = parse_date(t['date']).date()
+                    if task_date == sel_date:
+                        filtered.append(t)
+                except Exception:
+                    pass
+            update_task_list(filtered)
+        except Exception:
+            messagebox.showerror("Error", "Could not parse selected date.")
+
     tk.Button(win, text="Show Tasks for Day", command=filter_by_date).pack(pady=10)
 
 # ---- GUI SETUP ----
