@@ -196,7 +196,7 @@ def show_calendar():
     cal = Calendar(win, selectmode='day')
     cal.pack(pady=10)
     def filter_by_date():
-        sel_date = datetime.datetime.strptime(cal.get_date(), "%m/%d/%Y").date()
+        sel_date = datetime.datetime.strptime(cal.get_date(), "%m/%d/%y").date()
         filtered = [t for t in tasks if parse_date(t['date']).date() == sel_date]
         update_task_list(filtered)
     tk.Button(win, text="Show Tasks for Day", command=filter_by_date).pack(pady=10)
