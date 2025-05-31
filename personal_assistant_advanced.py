@@ -16,9 +16,9 @@ from email.message import EmailMessage
 
 # ---- CONFIG ----
 TASKS_FILE     = "tasks.json"
-EMAIL_SENDER   = "sbacchus.fitness@gmail.com "
+EMAIL_SENDER   = "XXX "
 EMAIL_RECEIVER = "micharby73@gmail.com"
-EMAIL_PASSWORD = "hdzlahpozrtxozrc"  # your app password
+EMAIL_PASSWORD = "your password "  # your app password
 
 toaster = ToastNotifier()
 
