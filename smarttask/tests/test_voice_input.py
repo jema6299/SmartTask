@@ -1,3 +1,36 @@
+import sys
+import types
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Create dummy speech_recognition and pyaudio modules so that
+# `import speech_recognition as sr` and `with sr.Microphone()` inside
+# voice_input.py do not fail.
+# We supply:
+#   - sr.Recognizer() having listen() and recognize_google()
+#   - sr.Microphone() context manager stub
+# ──────────────────────────────────────────────────────────────────────────────
+dummy_sr = types.ModuleType("speech_recognition")
+class DummyRecognizer:
+    def listen(self, src):
+        return "dummy_audio"
+    def recognize_google(self, audio):
+        return "Hello Task"
+dummy_sr.Recognizer = DummyRecognizer
+
+class DummyMicrophone:
+    def __enter__(self):
+        return None
+    def __exit__(self, exc_type, exc, tb):
+        pass
+dummy_sr.Microphone = DummyMicrophone
+
+# Insert dummy module before voice_input imports it
+sys.modules["speech_recognition"] = dummy_sr
+
+# Also stub out pyaudio, since speech_recognition often imports it
+sys.modules["pyaudio"] = types.ModuleType("pyaudio")
+# ──────────────────────────────────────────────────────────────────────────────
+
 import pytest
 from unittest.mock import patch, MagicMock
 
@@ -27,8 +60,6 @@ def tasks_list(tmp_path, monkeypatch):
     return []
 
 
-@patch("smarttask.src.voice_input.sr.Recognizer")
-@patch("smarttask.src.voice_input.sr.Microphone")
 @patch("smarttask.src.voice_input.speak")
 @patch("smarttask.src.voice_input.parse_date")
 @patch("smarttask.src.voice_input.schedule_reminder")
@@ -36,47 +67,38 @@ def test_voice_add_task_success(
         mock_schedule,
         mock_parse_date,
         mock_speak,
-        mock_microphone,
-        mock_recognizer,
         tasks_list,
         monkeypatch
 ):
     """
     Simulate a successful voice input:
-      - Recognizer().listen() yields audio
+      - Recognizer().listen() returns dummy audio
       - recognize_google(audio) returns "Hello Task"
       - simpledialog.askstring returns a valid date string
-      - messagebox.askyesno returns False
+      - messagebox.askyesno returns False (no repeat)
     """
-    # 1) Set up Recognizer().listen() → audio data (not actually used)
-    recog_instance = MagicMock()
-    mock_recognizer.return_value = recog_instance
-    recog_instance.listen.return_value = "dummy audio"
-    recog_instance.recognize_google.return_value = "Hello Task"
-
-    # 2) Patch simpledialog.askstring to return a date string
+    # Patch simpledialog.askstring to return a date string
     seq = iter(["2025-07-01 11:00"])
     monkeypatch.setattr(
         "tkinter.simpledialog.askstring",
         lambda title, prompt: next(seq)
     )
-    # 3) Patch messagebox.askyesno to return False (no repeat)
+    # Patch messagebox.askyesno to return False (no repeat)
     monkeypatch.setattr(
         "tkinter.messagebox.askyesno",
         lambda title, prompt: False
     )
 
-    # 4) Also patch parse_date so it doesn’t raise error
+    # Ensure parse_date does not raise
     mock_parse_date.return_value = None
 
-    # 5) Dummy Listbox and root
     dummy_lb = DummyListbox()
     root = FakeRoot()
 
     # Call voice_add_task
     voice_add_task(tasks_list, dummy_lb, root)
 
-    # Verify tasks_list now has 1 entry
+    # Verify one task was appended
     assert len(tasks_list) == 1
     assert tasks_list[0]["task"] == "Hello Task"
     assert "2025-07-01 11:00" in tasks_list[0]["date"]
@@ -87,21 +109,20 @@ def test_voice_add_task_success(
 
 
 @patch("smarttask.src.voice_input.sr.Recognizer")
-@patch("smarttask.src.voice_input.sr.Microphone")
 def test_voice_add_task_recognition_error(
-        mock_microphone,
         mock_recognizer,
         tasks_list,
 ):
     """
-    Simulate recognize_google throwing an exception – should pop up a messagebox.
+    Simulate recognize_google throwing an exception – voice_add_task should
+    catch it and call messagebox.showerror without appending any task.
     """
     recog_instance = MagicMock()
     mock_recognizer.return_value = recog_instance
     recog_instance.listen.return_value = "dummy audio"
     recog_instance.recognize_google.side_effect = Exception("Recognition Failed")
 
-    # Patch messagebox.showerror to capture error
+    # Patch messagebox.showerror to capture the error message
     called = {"msg": None}
     def fake_showerror(title, message):
         called["msg"] = message
@@ -110,14 +131,12 @@ def test_voice_add_task_recognition_error(
     mb_showerror = mb.showerror
     mb.showerror = fake_showerror
 
-    # Dummy Listbox and root
     dummy_lb = DummyListbox()
     root = FakeRoot()
 
-    # Call voice_add_task
     voice_add_task(tasks_list, dummy_lb, root)
 
-    # Tasks list must still be empty, and showerror called
+    # No tasks should be added, and showerror should have been called
     assert tasks_list == []
     assert "Recognition Failed" in called["msg"]
 
