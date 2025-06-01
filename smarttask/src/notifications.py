@@ -6,9 +6,9 @@ import smtplib
 from email.message import EmailMessage
 from tkinter import messagebox
 
-EMAIL_SENDER   = "micharby73@gmail.com"
-EMAIL_RECEIVER = "micharby73@gmail.com"
-EMAIL_PASSWORD = "kdrelaysmeaazugs"
+EMAIL_SENDER   = "email sender"
+EMAIL_RECEIVER = "Email Receiver"
+EMAIL_PASSWORD = "xxxxxxx"
 
 def play_sound_alert():
     winsound.Beep(1000, 500)
