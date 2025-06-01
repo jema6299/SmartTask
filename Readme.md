@@ -1,6 +1,6 @@
 # SmartTask – Digital Personal Assistant
 
-A lightweight desktop app (Python 3.10+) that helps you **add, view, and get reminded of tasks**.
+A lightweight desktop app (Python3.10+) that helps you **add, view, and get reminded of tasks**.
 
 Current MVP features
 - Text task entry (dialog)
@@ -63,3 +63,7 @@ Calendar – Show Calendar → pick a day → Show Tasks for Day
 Export / Import – save or load tasks as an Excel file (tasks.xlsx)
 
 Reminders trigger a beep, a toast notification, optional speech, and an email
+# Usage
+1. Run the application
+cd src
+python main.py
